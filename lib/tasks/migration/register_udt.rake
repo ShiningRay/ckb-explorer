@@ -71,7 +71,7 @@ class UdtRegister
       end
       udt.update!(code_hash: type_script.code_hash, hash_type: type_script.hash_type, args: type_script.args, symbol: args[:symbol], full_name: args[:full_name], decimal: args[:decimal], description: args[:description], operator_website: args[:operator_website], icon_file: args[:icon_file], issuer_address: issuer_address)
       udt.update!(published: true) if args[:icon_file].present?
-      UdtAccount.where(udt_id: udt.id).update!(symbol: udt.symbol, full_name: udt.full_name, decimal: udt.decimal, published: udt.published)
+      UdtAccount.where(udt_id: udt.id).update(symbol: udt.symbol, full_name: udt.full_name, decimal: udt.decimal, published: udt.published)
       flush_caches(type_script, udt)
     end
 
