@@ -20,8 +20,8 @@ class CotaAggregator
     send_request "get_history_transactions", {
       cota_id: cota_id,
       token_index: "0x" + token_index.to_s(16),
-      page: page,
-      page_size: page_size
+      page: page || '1',
+      page_size: page_size || '20'
     }
   end
 
@@ -41,8 +41,8 @@ class CotaAggregator
     send_request "get_hold_cota_nft", {
       lock_script: lock_script,
       cota_id: cota_id,
-      page: page,
-      page_size: page_size
+      page: page || '1',
+      page_size: page_size || '20'
     }
   end
 
@@ -57,8 +57,8 @@ class CotaAggregator
   def get_mint_cota_nft(lock_script:, page: nil, page_size: nil)
     send_request "is_claimed", {
       lock_script: lock_script,
-      page: page,
-      page_size: page_size
+      page: page || '1',
+      page_size: page_size || '20'
     }
   end
 
