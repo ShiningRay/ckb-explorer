@@ -8,25 +8,25 @@ namespace :api do
           resources :transfers, only: [:index, :show]
         end
       end
-      namespace :cota do
-        resources :nft_classes, only: :index do
-          resources :tokens, only: :index do 
-            member do
-              get :claimed
-              get :sender
-            end
-          end
-        end
-        resources :transactions, only: :index
-        resources :issuers, only: :show do
-          member do 
-            get :minted
-          end
-        end
-        
-      end
+
       resources :items, only: :index
       resources :transfers, only: [:index, :show]
+    end
+    namespace :cota do
+      resources :nft_classes, only: :index do
+        resources :tokens, only: :index do
+          member do
+            get :claimed
+            get :sender
+          end
+        end
+      end
+      resources :transactions, only: :index
+      resources :issuers, only: :show do
+        member do
+          get :minted
+        end
+      end
     end
   end
 end
