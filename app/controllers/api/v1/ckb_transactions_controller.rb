@@ -20,7 +20,7 @@ module Api
 
       def query
         @page = params[:page] || 1
-        @page_size = params[:page_size]  || 10
+        @page_size = params[:page_size] || 10
 
         if params[:address]
           @address = Address.direct_find(params[:address])
@@ -35,16 +35,12 @@ module Api
             CkbTransaction.recent.normal.page(@page).per(@page_size)
           end
         ckb_transactions = ckb_transactions.select(:id, :tx_hash, :block_id, :block_number, :block_timestamp, :is_cellbase, :updated_at)
-        json = Rails.cache.realize(ckb_transactions.cache_key, version: ckb_transactions.cache_version, race_condition_ttl: 3.seconds) do
-
-          options = FastJsonapi::PaginationMetaGenerator.new(request: request, records: ckb_transactions, page: @page, page_size: @page_size, records_counter: records_counter).call
-          CkbTransactionsSerializer.new(ckb_transactions, options.merge(params: { previews: true, address: @address })).serialized_json
-        end
+        options = FastJsonapi::PaginationMetaGenerator.new(request: request, records: ckb_transactions, page: @page, page_size: @page_size, records_counter: records_counter).call
+        json = CkbTransactionsSerializer.new(ckb_transactions, options.merge(params: { previews: true, address: @address })).serialized_json
         render json: json
       end
 
       def show
-
         ckb_transaction = CkbTransaction.find_by(id: params[:id]) || CkbTransaction.find_by(tx_hash: params[:id]) || PoolTransactionEntry.find_by(tx_hash: params[:id])
 
         raise Api::V1::Exceptions::CkbTransactionNotFoundError if ckb_transaction.blank?
@@ -57,7 +53,6 @@ module Api
       end
 
       private
-
 
       def from_home_page?
         params[:page].blank? || params[:page_size].blank?
