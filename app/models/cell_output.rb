@@ -147,6 +147,35 @@ class CellOutput < ApplicationRecord
     end
   end
 
+  def extra_info
+    case
+    when nervos_dao_withdrawing?
+    when nervos_dao_deposit?
+    when udt?
+      CkbUtils.hash_value_to_s(udt_info)
+    when cell_type.in?(%w(m_nft_issuer m_nft_class m_nft_token))
+      m_nft_info
+    when cell_type.in?(%w(nrc_721_token nrc_721_factory))
+      nrc_721_nft_info
+    end
+  end
+
+  def attributes_for_dao_input(is_phase2 = true)
+    nervos_dao_withdrawing_cell_generated_tx = generated_by
+    nervos_dao_deposit_cell = nervos_dao_withdrawing_cell_generated_tx.cell_inputs.order(:id)[nervos_dao_withdrawing_cell.cell_index].previous_cell_output
+    compensation_started_block = Block.select(:number, :timestamp).find(nervos_dao_deposit_cell.block.id)
+    compensation_ended_block = Block.select(:number, :timestamp).find(nervos_dao_withdrawing_cell_generated_tx.block_id)
+    interest = CkbUtils.dao_interest(nervos_dao_withdrawing_cell)
+    attributes = { compensation_started_block_number: compensation_started_block.number, compensation_ended_block_number: compensation_ended_block.number, compensation_started_timestamp: compensation_started_block.timestamp, compensation_ended_timestamp: compensation_ended_block.timestamp, interest: interest }
+    if is_phase2
+      locked_until_block = Block.select(:number, :timestamp).find(block_id)
+      attributes[:locked_until_block_number] = locked_until_block.number
+      attributes[:locked_until_block_timestamp] = locked_until_block.timestamp
+    end
+
+    CkbUtils.hash_value_to_s(attributes)
+  end  
+
   def create_token
     case cell_type
     when "m_nft_class"

@@ -110,8 +110,22 @@ class CkbTransaction < ApplicationRecord
     end
   end
 
+  def output_capacities_by_address(address)
+    Rails.cache.fetch([:output_capacities, self, address]) do
+      outputs.where(address: address).sum(:capacity)      
+    end
+  end
+
+  def input_capacities_by_address(address)
+    Rails.cache.fetch([:output_capacities, self, address]) do
+      inputs.where(address: address).sum(:capacity)
+    end
+  end
+
   def income(address)
-    outputs.where(address: address).sum(:capacity) - inputs.where(address: address).sum(:capacity)
+    Rails.cache.fetch([:income, self, address]) do 
+      output_capacities_by_address(address) - input_capacities_by_address(address)
+    end
   end
 
   def dao_transaction?
@@ -144,7 +158,20 @@ class CkbTransaction < ApplicationRecord
   end
 
   def tx_display_info
-    TxDisplayInfo.find_by(ckb_transaction_id: self.id)
+    Rails.cache.fetch([:tx_display_info, self]) do
+      income = Hash.new
+      contained_addres.each do |address|
+        income[address.address_hash] = tx.income(address)
+      end
+      { 
+        ckb_transaction_id: id, 
+        inputs: display_inputs, 
+        outputs: display_outputs, 
+        income: income, 
+        created_at: Time.current, 
+        updated_at: Time.current 
+      }
+    end
   end
 
   def display_inputs_info(previews: false)
@@ -182,7 +209,14 @@ class CkbTransaction < ApplicationRecord
     end
     cell_outputs_for_display.map do |output|
       consumed_tx_hash = output.live? ? nil : output.consumed_by.tx_hash
-      display_output = { id: output.id, capacity: output.capacity, address_hash: output.address_hash, status: output.status, consumed_tx_hash: consumed_tx_hash, cell_type: output.cell_type }
+      display_output = { 
+        id: output.id, 
+        capacity: output.capacity, 
+        address_hash: output.address_hash, 
+        status: output.status, 
+        consumed_tx_hash: consumed_tx_hash, 
+        cell_type: output.cell_type 
+      }
       display_output.merge!(attributes_for_udt_cell(output)) if output.udt?
       display_output.merge!(attributes_for_m_nft_cell(output)) if output.cell_type.in?(%w(m_nft_issuer m_nft_class m_nft_token))
       display_output.merge!(attributes_for_nrc_721_cell(output)) if output.cell_type.in?(%w(nrc_721_token nrc_721_factory))
@@ -271,7 +305,14 @@ class CkbTransaction < ApplicationRecord
 
   def cellbase_display_inputs
     cellbase = Cellbase.new(block)
-    [CkbUtils.hash_value_to_s(id: nil, from_cellbase: true, capacity: nil, address_hash: nil, target_block_number: cellbase.target_block_number, generated_tx_hash: tx_hash)]
+    {
+      id: nil, 
+      from_cellbase: true, 
+      capacity: nil, 
+      address_hash: nil, 
+      target_block_number: cellbase.target_block_number, 
+      generated_tx_hash: tx_hash
+    }
   end
 
   def recover_dead_cell

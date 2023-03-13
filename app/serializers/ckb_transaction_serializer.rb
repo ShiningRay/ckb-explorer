@@ -75,6 +75,7 @@ class CkbTransactionSerializer
     UpdateTxBytesWorker.perform_async object.id if object.bytes.blank?
     object.bytes
   end
+
   attribute :largest_tx_in_epoch do |object|
     object.block&.epoch_statistic&.largest_tx_bytes
   end
@@ -93,4 +94,21 @@ class CkbTransactionSerializer
   attribute :max_cycles do
     EpochStatistic.max_tx_cycles
   end
+
+
+  def display_inputs(previews: false)
+    if is_cellbase
+      cellbase_display_inputs
+    else
+      normal_tx_display_inputs(previews)
+    end
+  end
+
+  def display_outputs(previews: false)
+    if is_cellbase
+      cellbase_display_outputs
+    else
+      normal_tx_display_outputs(previews)
+    end
+  end  
 end
