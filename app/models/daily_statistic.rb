@@ -17,6 +17,21 @@ class DailyStatistic < ApplicationRecord
   def liquidity
     circulating_supply - total_dao_deposit.to_d
   end
+
+  def self.fix_total_deposit
+    last_total = nil
+    order("created_at_unixtimestamp asc nulls last").find_each do |daily_statistic|
+      puts Time.at(daily_statistic.created_at_unixtimestamp).to_s
+      if last_total
+        last_total = daily_statistic.total_dao_deposit = last_total + daily_statistic.daily_dao_deposit - daily_statistic.daily_dao_withdraw
+        if daily_statistic.save
+          puts "daily_statistic.total_dao_deposit = #{daily_statistic.total_dao_deposit}"
+        end
+      else
+        last_total = daily_statistic.total_dao_deposit.to_d
+      end
+    end
+  end
 end
 
 # == Schema Information
