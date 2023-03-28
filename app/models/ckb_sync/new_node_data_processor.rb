@@ -1067,7 +1067,6 @@ module CkbSync
     end
 
     def ckb_transaction_attributes(local_block, tx, tx_index)
-
       {
         block_id: local_block.id,
         tx_hash: tx.hash,
@@ -1376,6 +1375,7 @@ module CkbSync
     end
 
     def revert_mining_info(local_tip_block)
+      binding.pry
       local_tip_block.mining_infos.first.reverted!
       miner_address = local_tip_block.miner_address
       miner_address.decrement!(:mined_blocks_count)

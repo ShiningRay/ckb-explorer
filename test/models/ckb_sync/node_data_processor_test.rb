@@ -651,7 +651,7 @@ module CkbSync
       end
     end
 
-    test "should create forked event when block is invalid " do
+    test "should create forked event when block is invalid" do
       node_block = fake_node_block
       create(:block, :with_block_hash, number: node_block.header.number - 1)
       VCR.use_cassette("blocks/#{DEFAULT_NODE_BLOCK_NUMBER}") do
