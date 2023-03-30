@@ -177,8 +177,8 @@ class CkbTransaction < ApplicationRecord
     CkbTransaction.
       where("bytes > 0 and transaction_fee > 0").
       where("block_timestamp >= ?", last_n_day.days.ago.to_i * 1000).
-      group("(block_timestamp / 86400000)::integer").
-      pluck(Arel.sql("(block_timestamp / 86400000)::integer as date"),
+      group("cast(block_timestamp as bigint) / 86400000").
+      pluck(Arel.sql("(cast(block_timestamp as bigint) / 86400000) as date"),
             Arel.sql("sum(transaction_fee / bytes) / count(*) as fee_rate")).
       map { |date, fee_rate| { date: Time.at(date * 86400).utc.strftime("%Y-%m-%d"), fee_rate: fee_rate } }
   end
