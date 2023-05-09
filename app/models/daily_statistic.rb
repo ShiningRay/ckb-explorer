@@ -8,7 +8,9 @@ class DailyStatistic < ApplicationRecord
 
   scope :valid_indicators, -> { select(VALID_INDICATORS - %w(burnt liquidity created_at updated_at) + %w(id)) }
   scope :recent, -> { order("created_at_unixtimestamp desc nulls last") }
-  scope :recent_year, -> { where("created_at_unixtimestamp >= ? and created_at_unixtimestamp < ?", Time.current.beginning_of_year.to_i, Time.current.to_i) }
+  scope :recent_year, -> {
+                        where("created_at_unixtimestamp >= ? and created_at_unixtimestamp < ?", Time.current.beginning_of_year.to_i, Time.current.to_i)
+                      }
 
   def burnt
     treasury_amount.to_i + MarketData::BURN_QUOTA
@@ -16,6 +18,83 @@ class DailyStatistic < ApplicationRecord
 
   def liquidity
     circulating_supply - total_dao_deposit.to_d
+  end
+
+  def blocks_in_current_period
+    @blocks_in_current_period ||= Block.created_between(started_at, ended_at)
+  end
+
+  def transactions_in_current_period
+    @transactions_in_current_period ||= CkbTransaction.created_between(started_at, ended_at)
+  end
+
+  def cell_generated_in_current_period
+    @cell_generated_in_current_period ||= CellOutput.generated_between(started_at, ended_at)
+  end
+
+  def dao_events_in_current_period
+    @dao_events_in_current_period ||= DaoEvent.created_between(started_at, ended_at)
+  end
+
+  def processed_dao_events_in_current_period
+    @processed_dao_events_in_current_period ||= dao_events_in_current_period.processed
+  end
+
+  def block_timestamp
+    blocks_in_current_period.recent.pick(:timestamp)
+  end
+
+  define_logic :transactions_count do
+    transactions_in_current_period.count
+  end
+
+  define_logic :addresses_count do
+    processed_addresses_count
+  end
+
+  def daily_dao_withdraw
+    @daily_dao_withdraw ||= DaoEvent.processed.withdraw_from_dao.created_after(started_at).created_before(ended_at).sum(:value)
+  end
+
+  def daily_dao_deposit
+    @daily_dao_deposit ||= DaoEvent.processed.deposit_to_dao.created_after(started_at).created_before(ended_at).sum(:value)
+  end
+
+  define_logic :total_dao_deposit do
+    daily_dao_deposit - daily_dao_withdraw + yesterday_daily_statistic.total_dao_deposit.to_i
+  end
+
+  define_logic :dao_depositors_count do
+    withdrawals_today = DaoEvent.processed.take_away_all_deposit.created_after(started_at).created_before(ended_at).count
+    daily_dao_depositors_count - withdrawals_today + yesterday_daily_statistic.dao_depositors_count.to_i
+  end
+
+  define_logic :average_deposit_time do
+    interest_bearing_deposits = 0
+    uninterest_bearing_deposits = 0
+    sum_interest_bearing = 0
+    sum_uninterest_bearing = 0
+
+    CellOutput.nervos_dao_withdrawing.generated_before(ended_at).unconsumed_at(ended_at).find_each do |nervos_dao_withdrawing_cell|
+      nervos_dao_withdrawing_cell_generated_tx = nervos_dao_withdrawing_cell.ckb_transaction
+      nervos_dao_deposit_cell = nervos_dao_withdrawing_cell_generated_tx.cell_inputs.order(:id)[nervos_dao_withdrawing_cell.cell_index].previous_cell_output
+      interest_bearing_deposits += nervos_dao_deposit_cell.capacity
+      sum_interest_bearing += nervos_dao_deposit_cell.capacity * (nervos_dao_withdrawing_cell.block_timestamp - nervos_dao_deposit_cell.block_timestamp) / MILLISECONDS_IN_DAY
+    end
+
+    CellOutput.nervos_dao_deposit.generated_before(ended_at).unconsumed_at(ended_at).find_each do |nervos_dao_deposit_cell|
+      uninterest_bearing_deposits += nervos_dao_deposit_cell.capacity
+
+      sum_uninterest_bearing += nervos_dao_deposit_cell.capacity * (ended_at - nervos_dao_deposit_cell.block_timestamp) / MILLISECONDS_IN_DAY
+    end
+
+    total_deposits = interest_bearing_deposits + uninterest_bearing_deposits
+
+    if total_deposits.zero?
+      0
+    else
+      ((sum_interest_bearing + sum_uninterest_bearing) / total_deposits).truncate(3)
+    end
   end
 end
 

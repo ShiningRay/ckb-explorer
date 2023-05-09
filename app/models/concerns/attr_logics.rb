@@ -24,6 +24,7 @@ module AttrLogics
     end
   end
 
+  # reset all attributes specified and then save
   def reset!(*attr_names)
     reset *attr_names
     save!
@@ -33,20 +34,39 @@ module AttrLogics
     reset attr_definitions.keys
   end
 
+  # reset all attributes and then save
   def reset_all!
     reset_all
     save!
   end
 
-  def reset_one(attr_name)
-    raise "undefined attribute '#{attr_name}' calculation logic" unless attr_definitions[attr_name]
+  # reset one attribute and then save immediately
+  def reset_one_by_one(*attr_names)
+    attr_names.flatten.each do |a|
+      reset a
+      save!
+    end
+  end
 
-    self[attr_name] = instance_eval(&attr_definitions[attr_name])
+  def reset_all_one_by_one
+    reset_one_by_one attr_definitions.keys
+  end
+
+  # calculate specified attribute and return result and set
+  def reset_one(attr_name)
+    self[attr_name] = calc_attr(attr_name)
   end
 
   def reset_one!(attr_name)
     reset_one(attr_name)
     save!
+  end
+
+  # calculate specified attribute and return result
+  def calc_attr(attr_name)
+    raise "undefined attribute '#{attr_name}' calculation logic" unless attr_definitions[attr_name]
+
+    instance_eval(&attr_definitions[attr_name])
   end
 
   # fill will not modify the value if it is already set
@@ -70,12 +90,26 @@ module AttrLogics
     save!
   end
 
-  def fill_one(attr_name)
-    raise "undefined attribute '#{attr_name}' calculation logic" unless attr_definitions[attr_name]
-
-    self[attr_name] ||= instance_eval(&attr_definitions[attr_name])
+  # fill will not modify the value if it is already set
+  def fill_one_by_one(*attr_names)
+    attr_names.flatten.each do |a|
+      fill_one a
+      save!
+    end
   end
 
+  # fill will not modify the value if it is already set
+  def fill_all_one_by_one
+    fill_one_by_one attr_definitions.keys
+  end
+
+  # calculate specified attribute, and set it if it is not set
+  # @param attr_name [String]
+  def fill_one(attr_name)
+    self[attr_name] ||= calc_attr(attr_name)
+  end
+
+  # @param attr_name [String]
   def fill_one!(attr_name)
     fill_one(attr_name)
     save!
