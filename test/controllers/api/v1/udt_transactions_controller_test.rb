@@ -66,7 +66,7 @@ class Api::V1::UdtTransactionsControllerTest < ActionDispatch::IntegrationTest
     page = 1
     page_size = 10
     udt = create(:udt, :with_transactions, published: true)
-    ckb_transactions = udt.ckb_transactions.order(block_timestamp: :desc).page(page).per(page_size)
+    ckb_transactions = udt.ckb_transactions.recent.page(page).per(page_size)
 
     valid_get api_v1_udt_transaction_url(udt.type_hash)
 
@@ -82,7 +82,7 @@ class Api::V1::UdtTransactionsControllerTest < ActionDispatch::IntegrationTest
 
     response_tx_transaction = json["data"].first
 
-    assert_equal %w(block_number transaction_hash block_timestamp display_inputs display_outputs is_cellbase income).sort, response_tx_transaction["attributes"].keys.sort
+    assert_equal %w(block_number block_timestamp display_inputs display_inputs_count display_outputs display_outputs_count income is_cellbase transaction_hash).sort, response_tx_transaction["attributes"].keys.sort
   end
 
   test "should return error object when no records found by id" do
@@ -163,7 +163,7 @@ class Api::V1::UdtTransactionsControllerTest < ActionDispatch::IntegrationTest
     page = 1
     page_size = 12
     udt = create(:udt, :with_transactions, published: true)
-    udt_ckb_transactions = udt.ckb_transactions.order(block_timestamp: :desc).page(page).per(page_size)
+    udt_ckb_transactions = udt.ckb_transactions.recent.page(page).per(page_size)
 
     valid_get api_v1_udt_transaction_url(udt.type_hash), params: { page_size: page_size }
 
@@ -178,12 +178,11 @@ class Api::V1::UdtTransactionsControllerTest < ActionDispatch::IntegrationTest
     page = 2
     page_size = 5
     udt = create(:udt, :with_transactions, published: true)
-    udt_ckb_transactions = udt.ckb_transactions.order(block_timestamp: :desc).page(page).per(page_size)
+    udt_ckb_transactions = udt.ckb_transactions.recent.page(page).per(page_size)
 
     valid_get api_v1_udt_transaction_url(udt.type_hash), params: { page: page, page_size: page_size }
     options = FastJsonapi::PaginationMetaGenerator.new(request: request, records: udt_ckb_transactions, page: page, page_size: page_size).call
     response_transaction = CkbTransactionsSerializer.new(udt_ckb_transactions, options.merge(params: { previews: true })).serialized_json
-
     assert_equal response_transaction, response.body
   end
 
@@ -191,7 +190,7 @@ class Api::V1::UdtTransactionsControllerTest < ActionDispatch::IntegrationTest
     page = 5
     page_size = 10
     udt = create(:udt, :with_transactions, published: true)
-    udt_ckb_transactions = udt.ckb_transactions.order(block_timestamp: :desc).page(page).per(page_size)
+    udt_ckb_transactions = udt.ckb_transactions.recent.page(page).per(page_size)
 
     valid_get api_v1_udt_transaction_url(udt.type_hash), params: { page: page, page_size: page_size }
 

@@ -15,12 +15,28 @@ class MinerRanking
   end
 
   def ranking_infos
-    ckb_transactions = CkbTransaction.where("block_timestamp >= ? and block_timestamp <= ?", STARTED_AT_TIMESTAMP, ENDED_AT_TIMESTAMP).where(is_cellbase: true).where.not(block_number: 0)
-    only_one_cell_output_txs_id = CellOutput.where(ckb_transaction: ckb_transactions).group(:ckb_transaction_id).having("count(*) = 1").pluck("ckb_transaction_id")
+    ckb_transactions =
+      CkbTransaction.
+        where("block_timestamp >= ? and block_timestamp <= ?", STARTED_AT_TIMESTAMP, ENDED_AT_TIMESTAMP).
+        where(is_cellbase: true).
+        where.not(block_number: 0)
+    only_one_cell_output_txs_id =
+      CellOutput.
+        where(ckb_transaction: ckb_transactions).
+        group(:ckb_transaction_id).
+        having("count(*) = 1").
+        pluck("ckb_transaction_id")
     address_ids = AccountBook.where(ckb_transaction: only_one_cell_output_txs_id).pluck(:address_id).uniq
-    more_than_one_cell_output_txs_id = CellOutput.where(ckb_transaction: ckb_transactions).group(:ckb_transaction_id).having("count(*) > 1").pluck("ckb_transaction_id")
+    more_than_one_cell_output_txs_id =
+      CellOutput.
+        where(ckb_transaction: ckb_transactions).
+        group(:ckb_transaction_id).having("count(*) > 1").
+        pluck("ckb_transaction_id")
     if more_than_one_cell_output_txs_id.present?
-      address_ids += CkbTransaction.where(id: more_than_one_cell_output_txs_id).map { |ckb_transaction| ckb_transaction.cell_outputs.first.address_id }
+      address_ids +=
+        CkbTransaction.where(id: more_than_one_cell_output_txs_id).map do |ckb_transaction|
+          ckb_transaction.cell_outputs.first.address_id
+        end
     end
     addresses = Address.where(id: address_ids)
     ranking_infos = []
@@ -31,7 +47,11 @@ class MinerRanking
       blocks.find_each do |block|
         total_base_reward += CkbUtils.base_reward(block.number, block.epoch)
       end
-      ranking_infos << { address_hash: address.address_hash, lock_hash: address.lock_hash, total_base_reward: total_base_reward }
+      ranking_infos << {
+        lock_hash: address.lock_hash,
+        address_hash: address.address_hash,
+        total_base_reward: total_base_reward
+      }
     end
 
     ranking_infos.sort_by { |ranking_info| ranking_info[:total_base_reward] }.reverse

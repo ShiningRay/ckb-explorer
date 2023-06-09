@@ -106,7 +106,7 @@ module Api
         valid_get api_v1_udt_url(udt.type_hash)
 
         response_tx_transaction = json["data"]
-        assert_equal %w(symbol full_name total_amount addresses_count decimal icon_file h24_ckb_transactions_count created_at description published type_hash type_script issuer_address).sort, response_tx_transaction["attributes"].keys.sort
+        assert_equal %w(symbol full_name display_name uan total_amount addresses_count decimal icon_file h24_ckb_transactions_count created_at description published type_hash type_script issuer_address).sort, response_tx_transaction["attributes"].keys.sort
       end
 
       test "should get success code when call index" do
@@ -162,12 +162,21 @@ module Api
         create(:udt, addresses_count: 2)
         create(:udt, addresses_count: 3)
 
-        valid_get api_v1_udts_url
+        valid_get api_v1_udts_url(addresses_count_desc: true)
         records = Udt.sudt.order(addresses_count: :desc).page(1).per(25)
         options = FastJsonapi::PaginationMetaGenerator.new(request: request, records: records, page: 1, page_size: 25).call
         expected_udts = UdtSerializer.new(records, options).serialized_json
 
         assert_equal expected_udts, response.body
+      end
+
+
+      test "should get download_csv" do
+        udt = create(:udt, :with_transactions, published: true)
+
+        valid_get download_csv_api_v1_udts_url(id: udt.type_hash, start_date: Time.now.strftime("%Y-%m-%d"), end_date: Time.now.strftime("%Y-%m-%d"))
+
+        assert_response :success
       end
     end
   end

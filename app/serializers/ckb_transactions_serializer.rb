@@ -3,7 +3,9 @@ class CkbTransactionsSerializer
 
   attributes :is_cellbase
 
-  attribute :transaction_hash, &:tx_hash
+  attribute :transaction_hash do |object|
+    object.tx_hash.to_s
+  end
 
   attribute :block_number do |object|
     object.block_number.to_s
@@ -13,28 +15,28 @@ class CkbTransactionsSerializer
     object.block_timestamp.to_s
   end
 
+  attribute :display_inputs_count do |object|
+    object.display_inputs.count
+  end
+
+  attribute :display_outputs_count do |object|
+    object.display_outputs.count
+  end
+
   attribute :display_inputs do |object, params|
-    if params && params[:previews]
-      if object.display_inputs_info.present?
-        object.display_inputs_info(previews: true)
-      else
+    Rails.cache.fetch("display_inputs_previews_#{params[:previews].present?}_#{object.id}", expires_in: 1.day) do
+      if params && params[:previews]
         object.display_inputs(previews: true)
+      else
+        object.display_inputs
       end
-    else
-      object.display_inputs_info.presence || object.display_inputs
     end
   end
 
   attribute :display_outputs do |object, params|
-    if params && params[:previews]
-      if object.display_inputs_info.present?
-        object.display_outputs_info(previews: true)
-      else
+    Rails.cache.fetch("display_outputs_previews_#{params[:previews].present?}_#{object.id}", expires_in: 1.day) do
+      if params && params[:previews]
         object.display_outputs(previews: true)
-      end
-    else
-      if object.display_inputs_info.present?
-        object.display_outputs_info
       else
         object.display_outputs
       end
@@ -43,11 +45,7 @@ class CkbTransactionsSerializer
 
   attribute :income do |object, params|
     if params && params[:previews] && params[:address].present?
-      if object.tx_display_info.present?
-        object.tx_display_info.income[params[:address].address_hash]
-      else
-        object.income(params[:address])
-      end
+      object.income(params[:address])
     end
   end
 end

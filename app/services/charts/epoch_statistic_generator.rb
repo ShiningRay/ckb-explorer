@@ -20,8 +20,21 @@ module Charts
       hash_rate = difficulty * epoch_length / epoch_time
 
       epoch_statistic = ::EpochStatistic.find_or_create_by(epoch_number: target_epoch_number)
-      epoch_statistic.update(difficulty: difficulty, uncle_rate: uncle_rate, hash_rate: hash_rate,
-                             epoch_time: epoch_time, epoch_length: epoch_length)
+
+      epoch_statistic.reset_largest_tx_hash
+      epoch_statistic.reset_largest_tx_bytes
+      epoch_statistic.reset_max_tx_cycles
+      epoch_statistic.reset_max_block_cycles
+      epoch_statistic.reset_largest_block_number
+      epoch_statistic.reset_largest_block_size
+
+      epoch_statistic.update(
+        difficulty: difficulty,
+        uncle_rate: uncle_rate,
+        hash_rate: hash_rate,
+        epoch_time: epoch_time,
+        epoch_length: epoch_length
+      )
     end
 
     private

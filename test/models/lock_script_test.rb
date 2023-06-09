@@ -6,6 +6,11 @@ class LockScriptTest < ActiveSupport::TestCase
     create(:table_record_count, :ckb_transactions_counter)
     CkbSync::Api.any_instance.stubs(:get_blockchain_info).returns(OpenStruct.new(chain: "ckb_testnet"))
     GenerateStatisticsDataWorker.any_instance.stubs(:perform).returns(true)
+    CkbSync::Api.any_instance.stubs(:get_block_cycles).returns(
+      [
+        "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700", "0x800", "0x900"
+      ]
+    )
   end
 
   context "validations" do
@@ -76,7 +81,7 @@ class LockScriptTest < ActiveSupport::TestCase
       )
     )
     address = create(:address)
-    lock_script = create(:lock_script, address: address, args: "0xda648442dbb7347e467d1d09da13e5cd3a0ef0e1", code_hash: ENV["SECP_MULTISIG_CELL_TYPE_HASH"])
+    lock_script = create(:lock_script, address: address, args: "0xda648442dbb7347e467d1d09da13e5cd3a0ef0e1", code_hash: Settings.secp_multisig_cell_type_hash)
 
     assert_nil lock_script.lock_info
   end
@@ -100,7 +105,7 @@ class LockScriptTest < ActiveSupport::TestCase
     )
     address = create(:address)
     create(:block, number: 107036, start_number: 106327, epoch: 118, timestamp: 1576648516881, length: 796)
-    lock_script = create(:lock_script, address: address, args: "0x691fdcdc80ca82a4cb15826dcb7f0cf04cd821367600004506080720", code_hash: ENV["SECP_MULTISIG_CELL_TYPE_HASH"])
+    lock_script = create(:lock_script, address: address, args: "0x691fdcdc80ca82a4cb15826dcb7f0cf04cd821367600004506080720", code_hash: Settings.secp_multisig_cell_type_hash)
     expected_lock_info = { status: "locked", epoch_number: "118", epoch_index: "1605", estimated_unlock_time: "1576648532881" }
 
     assert_equal expected_lock_info, lock_script.lock_info

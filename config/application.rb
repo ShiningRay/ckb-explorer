@@ -22,7 +22,7 @@ Bundler.require(*Rails.groups)
 module Server
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 6.0
+    config.load_defaults 7.0
     config.action_dispatch.return_only_media_type_on_content_type = false
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration can go into files in config/initializers
@@ -34,5 +34,9 @@ module Server
     # Skip views, helpers and assets when generating a new resource.
     config.time_zone = "Beijing"
     config.api_only = true
+    config.active_record.schema_format = :sql
+    config.generators do |g|
+      g.fixture_replacement :factory_bot, dir: "test/factories"
+    end
   end
 end

@@ -6,6 +6,11 @@ class UncleBlockTest < ActiveSupport::TestCase
     create(:table_record_count, :ckb_transactions_counter)
     CkbSync::Api.any_instance.stubs(:get_blockchain_info).returns(OpenStruct.new(chain: "ckb_testnet"))
     GenerateStatisticsDataWorker.any_instance.stubs(:perform).returns(true)
+    CkbSync::Api.any_instance.stubs(:get_block_cycles).returns(
+      [
+        "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700", "0x800", "0x900"
+      ]
+    )
   end
 
   context "associations" do
@@ -83,7 +88,7 @@ class UncleBlockTest < ActiveSupport::TestCase
       uncle_block = block.uncle_blocks.first
       proposals = uncle_block.proposals
 
-      assert_equal unpack_array_attribute(uncle_block, "proposals", uncle_block.proposals_count, ENV["DEFAULT_SHORT_HASH_LENGTH"]), proposals
+      assert_equal unpack_array_attribute(uncle_block, "proposals", uncle_block.proposals_count, Settings.default_short_hash_length), proposals
     end
   end
 
@@ -103,6 +108,6 @@ class UncleBlockTest < ActiveSupport::TestCase
     uncle_block.proposals_count = uncle_block.proposals.size
     uncle_block.save
 
-    assert_equal unpack_array_attribute(uncle_block, "proposals", uncle_block.proposals_count, ENV["DEFAULT_SHORT_HASH_LENGTH"]), uncle_block.proposals
+    assert_equal unpack_array_attribute(uncle_block, "proposals", uncle_block.proposals_count, Settings.default_short_hash_length), uncle_block.proposals
   end
 end

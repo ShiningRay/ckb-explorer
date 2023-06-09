@@ -8,8 +8,7 @@ ckb-explorer.iml
 # server
 # Ignore bundler config.
 .bundle
-.env.local
-.env.test
+.env.*
 
 # server config
 config/settings.local.yml
@@ -20,6 +19,10 @@ log/*
 tmp/*
 !log/.keep
 !tmp/.keep
+*.orig
+*.swp
+*.swo
+*.swn
 
 # Ignore uploaded files in development
 storage/*
@@ -33,3 +36,8 @@ config/master.key
 
 # Ignore coverage results
 coverage/*
+data
+.env.test.local
+.secrets
+.env
+

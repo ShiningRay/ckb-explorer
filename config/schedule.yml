@@ -27,7 +27,7 @@ cal_address_average_deposit_time:
   class: "AddressAverageDepositTimeGenerator"
 
 cal_average_block_time:
-  cron: "3 0 * * *"
+  cron: "0 * * * *"
   class: "AverageBlockTimeGenerator"
 
 cal_address_unclaimed_compensation:
@@ -37,3 +37,11 @@ cal_address_unclaimed_compensation:
 update_pool_txs_status:
   cron: "*/5 * * * *"
   class: "PoolTransactionCheckWorker"
+
+clean_up_worker:
+  cron: "0 * * * *"
+  class: 'CleanUpWorker'
+
+update_h24_ckb_transactioins_count_on_udts:
+  cron: "0 * * * *"
+  class: 'UpdateH24CkbTransactionsCountOnUdtsWorker'

@@ -3,7 +3,6 @@ class BlockSerializer
 
   attributes :block_hash, :uncle_block_hashes, :miner_hash, :transactions_root,
              :reward_status, :received_tx_fee_status, :miner_message
-
   attribute :number do |object|
     object.number.to_s
   end
@@ -57,5 +56,30 @@ class BlockSerializer
   end
   attribute :miner_reward do |object|
     (object.received_tx_fee + object.reward).to_s
+  end
+
+  attribute :size do |object|
+    UpdateBlockSizeWorker.perform_async object.id if object.block_size.blank? or object.block_size == 0
+    object.block_size
+  end
+
+  attribute :largest_block_in_epoch do |object|
+    object.epoch_statistic&.largest_block_size
+  end
+
+  attribute :largest_block do
+    EpochStatistic.largest_block_size
+  end
+
+  attribute :cycles do |object|
+    object.cycles
+  end
+
+  attribute :max_cycles_in_epoch do |object|
+    object.epoch_statistic&.max_block_cycles
+  end
+
+  attribute :max_cycles do |_object|
+    EpochStatistic.max_block_cycles
   end
 end

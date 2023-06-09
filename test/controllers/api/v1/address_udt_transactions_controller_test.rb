@@ -77,7 +77,7 @@ module Api
         page_size = 10
         udt = create(:udt, published: true)
         address = create(:address, :with_udt_transactions, udt: udt)
-        ckb_udt_transactions = address.ckb_udt_transactions(udt.id).order(block_timestamp: :desc).page(page).per(page_size)
+        ckb_udt_transactions = address.ckb_udt_transactions(udt.id).recent.page(page).per(page_size)
 
         valid_get api_v1_address_udt_transaction_url(address.address_hash, type_hash: udt.type_hash)
 
@@ -94,7 +94,7 @@ module Api
 
         response_tx_transaction = json["data"].first
 
-        assert_equal %w(block_number transaction_hash block_timestamp display_inputs display_outputs is_cellbase income).sort, response_tx_transaction["attributes"].keys.sort
+        assert_equal %w(block_number block_timestamp display_inputs display_inputs_count display_outputs display_outputs_count income is_cellbase transaction_hash).sort, response_tx_transaction["attributes"].keys.sort
       end
 
       test "should return error object when no records found by id" do
@@ -168,7 +168,7 @@ module Api
         udt = create(:udt, published: true)
         address = create(:address, :with_udt_transactions, transactions_count: 30, udt: udt)
 
-        address_udt_transactions = address.ckb_udt_transactions(udt.id).order(block_timestamp: :desc).recent.page(page).per(page_size)
+        address_udt_transactions = address.ckb_udt_transactions(udt.id).recent.recent.page(page).per(page_size)
 
         valid_get api_v1_address_udt_transaction_url(address.address_hash, type_hash: udt.type_hash), params: { page: page }
 
@@ -184,7 +184,7 @@ module Api
         page_size = 12
         udt = create(:udt, published: true)
         address = create(:address, :with_udt_transactions, transactions_count: 15, udt: udt)
-        address_udt_transactions = address.ckb_udt_transactions(udt.id).order(block_timestamp: :desc).page(page).per(page_size)
+        address_udt_transactions = address.ckb_udt_transactions(udt.id).recent.page(page).per(page_size)
 
         valid_get api_v1_address_udt_transaction_url(address.address_hash, type_hash: udt.type_hash), params: { page_size: page_size }
 
@@ -215,7 +215,7 @@ module Api
         udt = create(:udt, published: true)
         address = create(:address, :with_udt_transactions, udt: udt)
 
-        address_udt_transactions = address.ckb_udt_transactions(udt.id).order(block_timestamp: :desc).page(page).per(page_size)
+        address_udt_transactions = address.ckb_udt_transactions(udt.id).recent.page(page).per(page_size)
 
         valid_get api_v1_address_udt_transaction_url(address.address_hash, type_hash: udt.type_hash), params: { page: page, page_size: page_size }
 
