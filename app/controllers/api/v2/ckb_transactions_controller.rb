@@ -1,6 +1,6 @@
 module Api
   module V2
-    class CkbTransactionsController < ApplicationController
+    class CkbTransactionsController < BaseController
       before_action :find_transaction, only: :details
       before_action :set_page_and_page_size, only: :details
 
@@ -51,7 +51,7 @@ module Api
       private
 
       def find_transaction
-        @ckb_transaction = CkbTransaction.find_by(tx_hash: params[:id])
+        @ckb_transaction = CkbTransaction.find_by!(tx_hash: params[:id])
       end
 
       def set_page_and_page_size
