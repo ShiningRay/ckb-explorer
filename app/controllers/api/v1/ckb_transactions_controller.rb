@@ -17,23 +17,30 @@ module Api
             end
           render json: json
         else
-          ckb_transactions = CkbTransaction.normal.select(
+          ckb_transactions = CkbTransaction.tx_committed.normal.select(
             :id, :tx_hash, :block_number, :block_timestamp, :live_cell_changes, :capacity_involved, :updated_at
           )
 
           params[:sort] ||= "id.desc"
 
-          order_by, asc_or_desc = params[:sort].split('.', 2)
-          order_by = case order_by
-          when 'height' then 'block_number'
-          when 'capacity' then 'capacity_involved'
-          else order_by
-          end
+          order_by, asc_or_desc = params[:sort].split(".", 2)
+          order_by =
+            case order_by
+                     when "height"
+                       "block_number"
+                     when "capacity"
+                       "capacity_involved"
+                     else
+                       order_by
+            end
 
-          head :not_found and return unless order_by.in? %w[id block_number block_timestamp transaction_fee capacity_involved]
+          head :not_found and return unless order_by.in? %w[
+            id block_number block_timestamp transaction_fee
+            capacity_involved
+          ]
 
-          ckb_transactions = ckb_transactions.order(order_by => asc_or_desc)
-            .page(@page).per(@page_size).fast_page
+          ckb_transactions = ckb_transactions.order(order_by => asc_or_desc).
+            page(@page).per(@page_size).fast_page
 
           json =
             Rails.cache.realize(ckb_transactions.cache_key,
@@ -96,13 +103,15 @@ module Api
       end
 
       def show
-        ckb_transaction = CkbTransaction.cached_find(params[:id])
+        ckb_transaction = CkbTransaction.where(tx_hash: params[:id]).order(tx_status: :desc).first
 
         raise Api::V1::Exceptions::CkbTransactionNotFoundError if ckb_transaction.blank?
 
         if ckb_transaction.tx_status.to_s == "rejected" && ckb_transaction.detailed_message.blank?
           PoolTransactionUpdateRejectReasonWorker.perform_async(ckb_transaction.tx_hash)
         end
+
+        expires_in 10.seconds, public: true, must_revalidate: true
 
         render json: CkbTransactionSerializer.new(ckb_transaction)
       end
